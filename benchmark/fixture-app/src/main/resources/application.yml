@@ -1,0 +1,40 @@
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 200
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    # ISSUE #1: Connection pool deliberately tiny
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      # No leak detection configured (intentional)
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    # ISSUE #8 enabler: open-in-view is true by default
+    open-in-view: true
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+  # ISSUE #7: @Async pool deliberately tiny
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 2
+        queue-capacity: 0
+      thread-name-prefix: "async-task-"
+
+# ISSUE #4: @Scheduled uses default pool size of 1 (not configured here = default)
+# spring.task.scheduling.pool.size is NOT set
+
+logging:
+  level:
+    com.example.fixture: DEBUG

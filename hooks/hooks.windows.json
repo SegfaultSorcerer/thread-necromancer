@@ -1,0 +1,36 @@
+{
+  "hooks": [
+    {
+      "name": "thread-dump-on-test-hang",
+      "description": "Automatically capture a thread dump when a test execution times out or hangs",
+      "event": "PostToolUse",
+      "condition": {
+        "toolName": "Bash",
+        "outputContains": ["timeout", "hung", "Timeout", "TIMEOUT", "timed out"],
+        "commandMatches": ["mvn test", "mvn verify", "gradle test", "mvnw.cmd test", "gradlew.bat test"]
+      },
+      "enabled_by": ".thread-necromancer/dump-on-test-hang.enabled",
+      "action": {
+        "type": "script",
+        "command": "powershell -ExecutionPolicy Bypass -File ./scripts/hooks/on-test-hang.ps1",
+        "description": "Captures thread dump of hanging test JVM process"
+      }
+    },
+    {
+      "name": "startup-thread-baseline",
+      "description": "Capture a baseline thread dump 10 seconds after Spring Boot application starts",
+      "event": "PostToolUse",
+      "condition": {
+        "toolName": "Bash",
+        "outputContains": ["Started ", "in seconds", "JVM running for"],
+        "commandMatches": ["mvn spring-boot:run", "mvnw.cmd spring-boot:run", "gradle bootRun", "gradlew.bat bootRun"]
+      },
+      "enabled_by": ".thread-necromancer/startup-baseline.enabled",
+      "action": {
+        "type": "script",
+        "command": "powershell -ExecutionPolicy Bypass -File ./scripts/hooks/on-startup.ps1",
+        "description": "Captures baseline thread dump after Spring Boot startup"
+      }
+    }
+  ]
+}

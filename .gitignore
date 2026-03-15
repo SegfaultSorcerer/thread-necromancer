@@ -1,0 +1,21 @@
+.thread-necromancer/
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Maven/Gradle build output
+target/
+build/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+Thumbs.db
