@@ -20,7 +20,22 @@
   Part of the <a href="https://github.com/SegfaultSorcerer">SegfaultSorcerer</a> Java Tooling Ecosystem.
 </p>
 
-**4 slash commands. 2 automation hooks. Zero config to get started.**
+<p align="center">
+  <strong>4 slash commands. 2 automation hooks. Zero config to get started.</strong>
+</p>
+
+---
+
+<p align="center">
+  <a href="#why">Why?</a> &bull;
+  <a href="#skills">Skills</a> &bull;
+  <a href="#hooks">Hooks</a> &bull;
+  <a href="#installation">Installation</a> &bull;
+  <a href="#how-it-works">How It Works</a> &bull;
+  <a href="#what-it-detects">What It Detects</a> &bull;
+  <a href="#synergies">Synergies</a> &bull;
+  <a href="#contributing">Contributing</a>
+</p>
 
 ---
 
