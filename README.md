@@ -1,13 +1,24 @@
-# thread-necromancer
+<p align="center">
+  <img src="assets/thread-necromancer.png" alt="thread-necromancer" width="100%">
+</p>
 
-> **Raising insights from dead threads.**
+<h1 align="center">thread-necromancer</h1>
 
-JVM Thread Dump Analysis for Claude Code.
-Part of the [SegfaultSorcerer](https://github.com/SegfaultSorcerer) Java Tooling Ecosystem.
+<p align="center">
+  <em>Raising insights from dead threads.</em>
+</p>
 
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0-blue)](LICENSE-MIT)
-[![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://openjdk.org/)
-[![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-8B5CF6)](https://claude.ai)
+<p align="center">
+  <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT"></a>
+  <a href="LICENSE-APACHE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" alt="Apache 2.0"></a>
+  <img src="https://img.shields.io/badge/JDK-17+-orange.svg" alt="JDK 17+">
+  <img src="https://img.shields.io/badge/Claude_Code-plugin-blueviolet.svg" alt="Claude Code Plugin">
+</p>
+
+<p align="center">
+  JVM Thread Dump Analysis for Claude Code.<br>
+  Part of the <a href="https://github.com/SegfaultSorcerer">SegfaultSorcerer</a> Java Tooling Ecosystem.
+</p>
 
 **4 slash commands. 2 automation hooks. Zero config to get started.**
 
