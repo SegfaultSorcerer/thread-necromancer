@@ -17,5 +17,9 @@ build/
 .project
 .classpath
 
+# Eval workspaces
+*-workspace/
+evals/
+
 # OS
 Thumbs.db
