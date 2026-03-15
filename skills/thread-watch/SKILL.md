@@ -52,7 +52,7 @@ The script outputs the paths to all captured dump files.
 
 For each captured dump file:
 ```bash
-./scripts/dump-parser.sh <dump-file-path>
+java scripts/DumpParser.java <dump-file-path>
 ```
 
 ### Step 5: Temporal Analysis

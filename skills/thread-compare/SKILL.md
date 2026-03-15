@@ -27,8 +27,8 @@ You are a JVM thread dump analysis expert. Your task is to compare two thread du
 ### Step 2: Parse Both Dumps
 
 ```bash
-./scripts/dump-parser.sh <file1>
-./scripts/dump-parser.sh <file2>
+java scripts/DumpParser.java <file1>
+java scripts/DumpParser.java <file2>
 ```
 
 ### Step 3: Compare

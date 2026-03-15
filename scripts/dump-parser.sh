@@ -372,7 +372,8 @@ print_lock_owners() {
     }
 
     /^$/ {
-        if (current_thread != "" && (hold_count > 0 || wait_count > 0)) {
+        # Only show threads that HOLD locks (not just waiters — those are in clusters)
+        if (current_thread != "" && hold_count > 0) {
             printf "Thread \"%s\":\n", current_thread
             printf "  state: %s\n", state
             for (i = 1; i <= hold_count; i++) {
@@ -390,22 +391,25 @@ print_lock_owners() {
     echo ""
 }
 
-# --- Raw Non-Idle Threads ---
+# --- Notable Threads (non-idle, non-clustered, limited) ---
 
-print_raw_threads() {
-    echo "=== RAW THREADS (non-idle) ==="
+print_notable_threads() {
+    echo "=== NOTABLE THREADS (RUNNABLE + non-idle, max 20) ==="
 
     awk '
+    BEGIN { count = 0; max = 20 }
     /^"/ {
         thread_block = $0 "\n"
         in_thread = 1
         is_idle = 0
+        is_blocked = 0
         state = ""
     }
 
     in_thread && /java\.lang\.Thread\.State:/ {
         state = $0
         thread_block = thread_block $0 "\n"
+        if (state ~ /BLOCKED/) is_blocked = 1
         next
     }
 
@@ -426,13 +430,17 @@ print_raw_threads() {
     }
 
     in_thread && /^$/ {
-        if (!is_idle || state ~ /BLOCKED/) {
+        # Only print RUNNABLE non-idle threads (BLOCKED are in clusters already)
+        if (!is_idle && !is_blocked && state ~ /RUNNABLE/ && count < max) {
             printf "%s\n", thread_block
+            count++
         }
         in_thread = 0
         thread_block = ""
     }
     ' "$DUMP_FILE"
+
+    echo "(showing max 20 RUNNABLE threads; BLOCKED threads are in clusters above)"
 }
 
 # --- Main ---
@@ -443,4 +451,4 @@ print_thread_pools
 print_deadlocks
 print_blocked_clusters
 print_lock_owners
-print_raw_threads
+print_notable_threads
