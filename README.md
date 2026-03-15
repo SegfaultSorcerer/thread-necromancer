@@ -172,12 +172,16 @@ Requires a JDK (not just JRE) for thread dump capture tools.
 
 Check your setup:
 ```bash
+# macOS/Linux
 ./scripts/check-prerequisites.sh
+
+# Windows (PowerShell)
+powershell -File scripts/check-prerequisites.ps1
 ```
 
 **Platform support:**
-- **macOS/Linux:** Bash scripts. `jcmd` should be on PATH (usually via `$JAVA_HOME/bin`).
-- **Windows:** PowerShell scripts provided. Git Bash also works.
+- **Thread dump parser** (`DumpParser.java`): cross-platform, runs anywhere with JDK 11+
+- **Dump collector**: Bash (`dump-collector.sh`) on macOS/Linux, PowerShell (`dump-collector.ps1`) on Windows
 - **Docker:** Works if the JDK is in the container. For JRE-only containers, use `jstack` from the host.
 
 ---
@@ -201,8 +205,8 @@ Check your setup:
    |                         |  <raw thread dump>       |
    |                         |<-------------------------|
    |                         |                          |
-   |                         |  dump-parser.sh          |
-   |                         |  <structured sections>   |
+   |                         |  DumpParser.java         |
+   |                         |  6000 lines → 250 lines  |
    |                         |                          |
    |                         |  Claude analyzes with    |
    |                         |  reference material:     |
