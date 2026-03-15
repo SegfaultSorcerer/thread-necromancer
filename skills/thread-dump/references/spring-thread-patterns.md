@@ -1,118 +1,173 @@
-# Spring Thread Patterns Reference
+# Framework Thread Patterns Reference
 
 ## Thread Name → Component Mapping
+
+### Generic JVM / Common Libraries
+
+| Thread Name Pattern | Component | Default Pool Size |
+|---|---|---|
+| `ForkJoinPool.commonPool-*` | JDK common pool | CPU cores - 1 |
+| `ForkJoinPool-*-worker-*` | Custom ForkJoinPool | configurable |
+| `pool-*-thread-*` | Generic `ExecutorService` | varies |
+| `HikariPool-*-housekeeper` | HikariCP maintenance | 1 |
+| `HikariPool-*-connection-*` | HikariCP connections | pool size |
+| `C3P0PooledConnectionPool*` | C3P0 connection pool | pool size |
+| `oracle.jdbc.*` | Oracle JDBC driver threads | varies |
+| `mysql-cj-abandoned-connection-cleanup` | MySQL Connector/J | 1 |
+| `Abandoned connection cleanup thread` | MySQL Connector/J (older) | 1 |
+| `lettuce-nioEventLoop-*` | Redis Lettuce client | CPU cores |
+| `redisson-netty-*` | Redisson Redis client | varies |
+| `kafka-producer-network-*` | Kafka producer | 1 per producer |
+| `kafka-coordinator-*` | Kafka consumer coordinator | 1 per consumer |
+| `elasticsearch-*` | Elasticsearch client | varies |
+| `RMI *` | Java RMI / JMX | varies |
+| `GC Daemon` / `G1 *` / `ZGC *` | Garbage collector | JVM managed |
+| `Signal Dispatcher` | JVM signal handling | 1 |
+| `Finalizer` | Object finalization | 1 |
+| `Reference Handler` | Reference processing | 1 |
+
+### Tomcat (Spring Boot, standalone)
 
 | Thread Name Pattern | Component | Default Pool Size |
 |---|---|---|
 | `http-nio-*-exec-*` | Tomcat NIO connector | 200 |
 | `http-nio-*-Poller` | Tomcat NIO selector | 1–2 |
 | `http-nio-*-Acceptor` | Tomcat connection acceptor | 1 |
+| `Catalina-utility-*` | Tomcat utility threads | 2 |
+
+### Spring-Specific
+
+| Thread Name Pattern | Component | Default Pool Size |
+|---|---|---|
 | `scheduling-*` | @Scheduled (Spring default) | **1 (!)** |
 | `task-*` | @Async (Spring default pool) | 8 |
 | `taskScheduler-*` | Spring TaskScheduler | configurable |
-| `HikariPool-*-housekeeper` | HikariCP maintenance | 1 |
-| `HikariPool-*-connection-*` | HikariCP connections | pool size |
-| `lettuce-nioEventLoop-*` | Redis Lettuce client | CPU cores |
+| `AsyncExecutor-*` | Custom async executor | varies |
+
+### Spring WebFlux / Project Reactor
+
+| Thread Name Pattern | Component | Default Pool Size |
+|---|---|---|
 | `reactor-http-nio-*` | WebFlux/Netty event loop | CPU cores |
 | `parallel-*` | Project Reactor parallel | CPU cores |
 | `boundedElastic-*` | Project Reactor blocking ops | 10 x CPU cores |
-| `Eureka-*` | Eureka service discovery | varies |
-| `ForkJoinPool.commonPool-*` | JDK common pool | CPU cores - 1 |
-| `ForkJoinPool-*-worker-*` | Custom ForkJoinPool | configurable |
-| `C3P0PooledConnectionPool*` | C3P0 connection pool | pool size |
-| `oracle.jdbc.*` | Oracle JDBC driver threads | varies |
-| `pool-*-thread-*` | Generic ExecutorService | varies |
-| `AsyncExecutor-*` | Custom async executor | varies |
 
-## Spring Proxy Detection
+### Quarkus
 
-When analyzing stack traces, these frames indicate Spring proxies wrapping the actual business logic:
-
-| Frame Pattern | Proxy Type | Implications |
+| Thread Name Pattern | Component | Default Pool Size |
 |---|---|---|
-| `$$EnhancerBySpringCGLIB$$` | CGLIB proxy | Extract real class name before `$$` |
-| `$$SpringCGLIB$$` | CGLIB proxy (Spring 6+) | Same as above, newer naming |
-| `CglibAopProxy` | AOP advice | An aspect/interceptor is being applied |
-| `TransactionInterceptor` | @Transactional | Transaction boundary — connection likely held |
-| `MethodBeforeAdviceInterceptor` | @Before advice | Pre-method aspect |
-| `AfterReturningAdviceInterceptor` | @AfterReturning | Post-method aspect |
-| `ExposeInvocationInterceptor` | AOP infrastructure | Can be ignored — AOP plumbing |
-| `org.springframework.security.access.intercept` | @PreAuthorize/@Secured | Security check proxy |
-| `JdkDynamicAopProxy` | JDK dynamic proxy | Interface-based proxy |
+| `executor-thread-*` | Quarkus worker pool | 200 |
+| `vert.x-eventloop-thread-*` | Vert.x event loop | 2 x CPU cores |
+| `vert.x-worker-thread-*` | Vert.x worker pool | 20 |
+| `quarkus-scheduler-*` | Quarkus @Scheduled | configurable |
+| `arjuna-*` | Narayana transaction manager | varies |
 
-**When reporting:** Strip proxy class names and report the underlying business class. E.g., `OrderService$$EnhancerBySpringCGLIB$$a1b2c3.placeOrder()` → report as `OrderService.placeOrder()` (CGLIB proxy).
+### Micronaut
 
-## Common Spring Pitfalls in Thread Dumps
+| Thread Name Pattern | Component | Default Pool Size |
+|---|---|---|
+| `default-nioEventLoopGroup-*` | Netty event loop | CPU cores |
+| `io-executor-thread-*` | Micronaut I/O pool | configurable |
+| `scheduled-executor-thread-*` | Micronaut @Scheduled | configurable |
 
-### 1. @Scheduled Default Pool (Size = 1)
+### Vert.x (standalone)
 
-**What it looks like:**
-Only one `scheduling-*` thread exists. If a scheduled task takes longer than its interval, other tasks queue behind it.
+| Thread Name Pattern | Component | Default Pool Size |
+|---|---|---|
+| `vert.x-eventloop-thread-*` | Event loop | 2 x CPU cores |
+| `vert.x-worker-thread-*` | Worker pool | 20 |
+| `vert.x-internal-blocking-*` | Internal blocking ops | 20 |
 
-**Detection:**
-- Thread pool section shows `scheduling-1` with only 1 thread
-- That thread is doing actual work (not parked)
+### Jetty
 
-**Fix:**
-```yaml
-spring.task.scheduling.pool.size: 5
-```
-```java
-@Configuration
-public class SchedulingConfig implements SchedulingConfigurer {
-    @Override
-    public void configureTasks(ScheduledTaskRegistrar registrar) {
-        registrar.setScheduler(Executors.newScheduledThreadPool(5));
-    }
-}
-```
+| Thread Name Pattern | Component | Default Pool Size |
+|---|---|---|
+| `qtp*` | Jetty QueuedThreadPool | 200 |
+| `Jetty-*` | Jetty internal | varies |
 
-### 2. @Transactional Holding Connection During Non-DB I/O
+### Undertow (WildFly)
 
-**What it looks like:**
-Thread is RUNNABLE at `SocketInputStream.read()` or similar I/O, but the stack shows `TransactionInterceptor` earlier in the call chain. The thread holds a database connection while waiting for an external HTTP call.
+| Thread Name Pattern | Component | Default Pool Size |
+|---|---|---|
+| `XNIO-*-task-*` | Undertow worker threads | CPU cores x 8 |
+| `XNIO-*-I/O-*` | Undertow I/O threads | CPU cores |
+| `XNIO-*-Accept` | Connection acceptor | 1 |
 
-**Detection:**
-- Stack trace contains both `TransactionInterceptor` and `SocketInputStream.read`
-- Or: `TransactionInterceptor` + any non-DB blocking call
+### Netflix / Spring Cloud
 
-**Fix:**
-- Move the external call outside the `@Transactional` boundary
-- Split the method: DB work in one @Transactional method, external call separate
-- Use `@Transactional` only on the methods that actually need it
+| Thread Name Pattern | Component | Default Pool Size |
+|---|---|---|
+| `Eureka-*` | Eureka service discovery | varies |
+| `Hystrix-*` | Hystrix circuit breaker pool | 10 |
+| `RxIoScheduler-*` | RxJava I/O scheduler | varies |
+| `RxComputationScheduler-*` | RxJava computation scheduler | CPU cores |
 
-### 3. Open-in-View (Lazy Loading in Controller Layer)
+---
 
-**What it looks like:**
-Stack traces show Hibernate lazy initialization frames (`LazyInitializationException` handler or `AbstractLazyInitializer.initialize()`) in controller/serialization code, not in service layer.
+## Proxy / Wrapper Detection
 
-**Detection:**
-- `org.hibernate.proxy.AbstractLazyInitializer` frames above controller/serializer frames
-- Multiple short DB queries triggered during JSON serialization
+When analyzing stack traces, these frames indicate proxy layers wrapping the actual business logic. Strip them when reporting to show the real class.
 
-**Impact:**
-- Database connections held longer than necessary (through entire request lifecycle)
-- N+1 queries during serialization
-- Connection pool pressure
+### Spring
 
-**Fix:**
-```yaml
-spring.jpa.open-in-view: false
-```
-Then fix `LazyInitializationException` by using:
-- `JOIN FETCH` in queries
-- `@EntityGraph` annotations
-- DTOs instead of returning entities directly
+| Frame Pattern | Proxy Type |
+|---|---|
+| `$$EnhancerBySpringCGLIB$$` / `$$SpringCGLIB$$` | CGLIB proxy — extract real class name before `$$` |
+| `CglibAopProxy` | AOP advice being applied |
+| `TransactionInterceptor` | @Transactional boundary — connection likely held |
+| `JdkDynamicAopProxy` | Interface-based proxy |
+| `ExposeInvocationInterceptor` | AOP plumbing — can be ignored |
 
-### 4. WebFlux Blocking on Event Loop
+### CDI (Quarkus, WildFly)
 
-**What it looks like:**
-`reactor-http-nio-*` threads doing blocking operations (JDBC, file I/O, `Thread.sleep`).
+| Frame Pattern | Proxy Type |
+|---|---|
+| `_Subclass` / `_ClientProxy` | Quarkus CDI subclass proxy |
+| `Weld$Proxy$` | Weld CDI proxy (WildFly, generic CDI) |
+| `$$_WeldSubclass` | Weld enhanced subclass |
 
-**Detection:**
-- `reactor-http-nio-*` thread state is RUNNABLE at blocking I/O
-- Or: Reactor's `BlockHound` violation messages in logs
+### General
 
-**Fix:**
-- Offload blocking operations to `boundedElastic` scheduler: `.subscribeOn(Schedulers.boundedElastic())`
-- Use reactive drivers (R2DBC, reactive Redis, reactive MongoDB)
+| Frame Pattern | Proxy Type |
+|---|---|
+| `$Proxy` / `com.sun.proxy.$Proxy` | JDK dynamic proxy |
+| `$$FastClassByGuice$$` | Guice AOP proxy |
+| `ByteBuddy` / `$auxiliary` | ByteBuddy generated class |
+| `javassist` | Javassist proxy (Hibernate, older frameworks) |
+
+**When reporting:** Always strip proxy class names and report the underlying business class.
+
+---
+
+## Framework-Specific Pitfalls
+
+### Spring: @Scheduled Default Pool (Size = 1)
+
+Only one `scheduling-*` thread. All tasks queue behind each other.
+
+**Fix:** `spring.task.scheduling.pool.size: 5`
+
+### Spring: @Transactional Holding Connection During I/O
+
+Stack shows `TransactionInterceptor` + `SocketInputStream.read` — DB connection held during HTTP call.
+
+**Fix:** Move external calls outside `@Transactional` boundaries.
+
+### Spring: Open-in-View Lazy Loading
+
+`spring.jpa.open-in-view: true` (default) holds DB connection through entire request for lazy loading.
+
+**Fix:** Set `spring.jpa.open-in-view: false`, use `JOIN FETCH` or DTOs.
+
+### Spring WebFlux / Vert.x: Blocking on Event Loop
+
+`reactor-http-nio-*` or `vert.x-eventloop-thread-*` doing blocking I/O (JDBC, file I/O, `Thread.sleep`).
+
+**Fix (WebFlux):** `.subscribeOn(Schedulers.boundedElastic())`
+**Fix (Vert.x):** Use `executeBlocking()` or worker verticles.
+
+### Quarkus: Blocking on I/O Thread
+
+`executor-thread-*` blocked on reactive endpoint — Quarkus reactive routes must not block.
+
+**Fix:** Use `@Blocking` annotation or offload to worker pool with `Uni.emitOn()`.

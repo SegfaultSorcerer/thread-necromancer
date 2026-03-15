@@ -49,7 +49,7 @@ Work through the analysis systematically using the reference files in `skills/th
 3. **Blocked Thread Clusters** — What are threads waiting on? Who holds the locks?
 4. **Thread Pool Sizing** — Are pools appropriately sized? Any exhausted?
 5. **Lock Contention Hotspots** — Which locks have the most waiters?
-6. **Spring-Specific Patterns** — Proxy overhead, @Transactional issues, @Async pools, @Scheduled defaults (Reference: spring-thread-patterns.md)
+6. **Framework-Specific Patterns** — Spring, Quarkus, Micronaut, Vert.x proxy detection, transaction issues, scheduler defaults, event loop blocking (Reference: spring-thread-patterns.md)
 7. **I/O and External Services** — Threads stuck on socket reads? Timeouts configured?
 
 Use the analysis checklist in `skills/thread-analyze/references/analysis-checklist.md` to ensure nothing is missed.
@@ -98,7 +98,7 @@ NONE DETECTED — or detailed deadlock chain.
 For each cluster: count, wait point, lock info, representative stack trace.
 Annotate Spring proxy frames (strip CGLIB names, note @Transactional boundaries).
 
-### Spring-Specific Findings
+### Framework-Specific Findings
 | Severity | Finding | Detail |
 |---|---|---|
 
@@ -110,8 +110,8 @@ Annotate Spring proxy frames (strip CGLIB names, note @Transactional boundaries)
 
 ## Important Notes
 
-- Always strip Spring proxy class names (e.g., `$$EnhancerBySpringCGLIB$$`) and report the real class
+- Always strip proxy class names (Spring CGLIB, Quarkus CDI, Weld, JDK dynamic proxy) and report the real class
 - When suggesting config changes, provide the exact YAML property and value
-- If the application is not Spring-based, skip Spring-specific analysis sections
+- Detect the framework from thread names and stack frames, then apply the relevant framework-specific checks
 - If the dump looks like it was captured during a GC pause (all threads parked), note this prominently
 - If the dump file was not captured with dump-collector.sh, some metadata fields may be unavailable — that's fine, work with what's available

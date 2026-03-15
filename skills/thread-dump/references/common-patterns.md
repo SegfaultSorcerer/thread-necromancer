@@ -1,9 +1,12 @@
 # Common Thread Dump Patterns
 
+> These patterns apply to **any JVM application** — Spring Boot, Quarkus, Micronaut, Dropwizard, Vert.x, or plain Java.
+> Framework-specific configuration examples are provided where applicable.
+
 ## 1. Connection Pool Exhaustion
 
 **Signature:**
-Many threads WAITING at `HikariPool.getConnection()` or `C3P0PooledConnectionPoolManager.checkout()`.
+Many threads WAITING at `HikariPool.getConnection()`, `C3P0PooledConnectionPoolManager.checkout()`, or `AgroalConnectionPool.getConnection()`.
 ```
 java.lang.Thread.State: WAITING (parking)
   at com.zaxxer.hikari.pool.HikariPool.getConnection(HikariPool.java:181)
@@ -15,23 +18,42 @@ All database connections are in use. Incoming requests queue up waiting for a fr
 **Common Triggers:**
 - Pool size too small for request volume
 - Long-running queries holding connections
-- `@Transactional` methods doing non-DB work (HTTP calls, file I/O) while holding a connection
+- Transaction boundaries too wide — holding connection during non-DB work (HTTP calls, file I/O)
 - N+1 query patterns consuming connections longer than necessary
 - Connection leak (connection not returned to pool)
 
-**Fix:**
-```yaml
+**Fix (General — HikariCP config):**
+```properties
 # Increase pool size (rule of thumb: connections = (CPU cores * 2) + disk spindles)
-spring.datasource.hikari.maximum-pool-size: 20
+maximumPoolSize=20
 # Add connection timeout to fail fast instead of waiting forever
-spring.datasource.hikari.connection-timeout: 5000
+connectionTimeout=5000
 # Detect leaks
+leakDetectionThreshold=30000
+```
+
+**Fix (Spring Boot):**
+```yaml
+spring.datasource.hikari.maximum-pool-size: 20
+spring.datasource.hikari.connection-timeout: 5000
 spring.datasource.hikari.leak-detection-threshold: 30000
 ```
 
+**Fix (Quarkus — Agroal):**
+```properties
+quarkus.datasource.jdbc.max-size=20
+quarkus.datasource.jdbc.acquisition-timeout=5S
+```
+
+**Fix (Micronaut):**
+```yaml
+datasources.default.maximumPoolSize: 20
+datasources.default.connectionTimeout: 5000
+```
+
 **Code Fix:**
-- Move non-DB operations outside `@Transactional` boundaries
-- Fix N+1 queries with JOIN FETCH or `@EntityGraph`
+- Move non-DB operations outside transaction boundaries
+- Fix N+1 queries with JOIN FETCH, `@EntityGraph`, or batch fetching
 - Ensure connections are always returned (try-with-resources for manual JDBC)
 
 ---
@@ -57,8 +79,9 @@ A `synchronized` method/block on a shared object serializes all access. Under co
 - Replace `synchronized` with `ReentrantLock` (allows tryLock with timeout)
 - Use `ConcurrentHashMap.computeIfAbsent()` instead of `synchronized` + `HashMap`
 - Reduce scope of synchronized block to minimum critical section
-- Use `@Scope("prototype")` if the synchronized state is per-request
+- If using DI: use request-scoped beans if the synchronized state is per-request
 - Consider lock striping for map-like structures
+- Consider `StampedLock` for read-heavy workloads
 
 ---
 
@@ -75,30 +98,46 @@ java.lang.Thread.State: RUNNABLE
 **Root Cause:**
 HTTP/TCP call to external service with no timeout configured. If the external service hangs, threads accumulate here.
 
-**Fix:**
+**Fix (Java HttpClient — JDK 11+):**
+```java
+HttpClient client = HttpClient.newBuilder()
+    .connectTimeout(Duration.ofSeconds(3))
+    .build();
+HttpRequest request = HttpRequest.newBuilder(uri)
+    .timeout(Duration.ofSeconds(5))
+    .build();
+```
+
+**Fix (OkHttp):**
+```java
+OkHttpClient client = new OkHttpClient.Builder()
+    .connectTimeout(3, TimeUnit.SECONDS)
+    .readTimeout(5, TimeUnit.SECONDS)
+    .writeTimeout(5, TimeUnit.SECONDS)
+    .build();
+```
+
+**Fix (Apache HttpClient):**
+```java
+RequestConfig config = RequestConfig.custom()
+    .setConnectTimeout(Timeout.ofSeconds(3))
+    .setResponseTimeout(Timeout.ofSeconds(5))
+    .build();
+```
+
+**Fix (Spring RestTemplate):**
 ```yaml
-# RestTemplate
 spring.rest-template.connect-timeout: 3000
 spring.rest-template.read-timeout: 5000
-
-# WebClient (reactive)
-spring.webflux.client.connect-timeout: 3000
 ```
 
-```java
-// RestTemplate with timeouts
-@Bean
-public RestTemplate restTemplate(RestTemplateBuilder builder) {
-    return builder
-        .connectTimeout(Duration.ofSeconds(3))
-        .readTimeout(Duration.ofSeconds(5))
-        .build();
-}
-
-// OkHttp / Apache HttpClient — set connectTimeout + readTimeout + writeTimeout
+**Fix (Quarkus REST Client):**
+```properties
+quarkus.rest-client."com.example.MyClient".connect-timeout=3000
+quarkus.rest-client."com.example.MyClient".read-timeout=5000
 ```
 
-**Also consider:** Circuit breaker (Resilience4j) to fail fast when external service is down.
+**Also consider:** Circuit breaker (Resilience4j, MicroProfile Fault Tolerance, or Vert.x circuit breaker) to fail fast when external service is down.
 
 ---
 
@@ -138,15 +177,15 @@ pool: http-nio-8080-exec
 **Root Cause:**
 Request rate exceeds processing capacity. All worker threads are occupied.
 
-**Fix:**
-```yaml
-# Increase Tomcat thread pool (but also fix the root cause)
-server.tomcat.threads.max: 400
-# Set a minimum to avoid cold-start delays
-server.tomcat.threads.min-spare: 20
-# Set accept count (queue size before rejecting)
-server.tomcat.accept-count: 100
-```
+**Fix — increase pool size (but also fix the root cause):**
+
+| Server | Configuration |
+|---|---|
+| Tomcat (Spring Boot) | `server.tomcat.threads.max: 400` |
+| Tomcat (standalone) | `maxThreads="400"` in `server.xml` Connector |
+| Undertow (WildFly/Quarkus) | `quarkus.http.io-threads` / `io.undertow.worker-threads` |
+| Jetty | `maxThreads` in `QueuedThreadPool` |
+| Netty (Vert.x/Micronaut) | Event loop — scale via worker pool instead |
 
 **Root causes to investigate:**
 - Slow database queries (check connection pool)
@@ -182,39 +221,44 @@ Two or more threads each hold a lock the other needs, forming a circular depende
 
 ---
 
-## 7. @Async Pool Starvation
+## 7. Async / Executor Pool Starvation
 
 **Signature:**
-`SimpleAsyncTaskExecutor` creating unlimited threads (thread count grows unbounded), or
-`ThreadPoolTaskExecutor` fully occupied with all tasks queued.
+Unbounded thread creation (thread count grows without limit), or all threads in a fixed pool are busy with tasks queued.
 
-Thread names: `task-1`, `task-2`, ... or `SimpleAsyncTaskExecutor-1`, `SimpleAsyncTaskExecutor-2`, ...
+Common thread name patterns:
+- `pool-N-thread-N` — generic `ExecutorService`
+- `task-N` / `SimpleAsyncTaskExecutor-N` — Spring `@Async`
+- `executor-thread-N` — Quarkus/MicroProfile managed executor
+- `vert.x-worker-thread-N` — Vert.x worker pool
 
 **Root Cause:**
-- Default `SimpleAsyncTaskExecutor` creates a new thread per task (no pooling!)
-- `ThreadPoolTaskExecutor` with small pool and slow async tasks
+- `Executors.newCachedThreadPool()` creates threads without bound under sustained load
+- Spring's default `SimpleAsyncTaskExecutor` creates a new thread per task (no pooling!)
+- Fixed pool too small for the workload, tasks back up in queue or get rejected
 
-**Fix:**
+**Fix (Plain Java):**
 ```java
-@Configuration
-@EnableAsync
-public class AsyncConfig implements AsyncConfigurer {
-    @Override
-    public Executor getAsyncExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(50);
-        executor.setQueueCapacity(100);
-        executor.setThreadNamePrefix("async-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.initialize();
-        return executor;
-    }
-}
+ExecutorService executor = new ThreadPoolExecutor(
+    10, 50, 60L, TimeUnit.SECONDS,
+    new LinkedBlockingQueue<>(100),
+    new ThreadPoolExecutor.CallerRunsPolicy());
 ```
 
+**Fix (Spring Boot):**
 ```yaml
 spring.task.execution.pool.core-size: 10
 spring.task.execution.pool.max-size: 50
 spring.task.execution.pool.queue-capacity: 100
+```
+
+**Fix (Quarkus):**
+```properties
+quarkus.thread-pool.max-threads=50
+quarkus.thread-pool.queue-size=100
+```
+
+**Fix (Vert.x):**
+```java
+DeploymentOptions options = new DeploymentOptions().setWorkerPoolSize(20);
 ```

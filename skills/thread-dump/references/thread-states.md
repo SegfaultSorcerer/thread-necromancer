@@ -11,7 +11,9 @@
 | `TIMED_WAITING` | Waiting with a timeout | `Thread.sleep()`, `Object.wait(timeout)`, `LockSupport.parkNanos()` |
 | `TERMINATED` | Thread has completed execution | Rare in dumps — thread about to be cleaned up |
 
-## Healthy State Distribution (Spring Boot under moderate load)
+## Healthy State Distribution (JVM application under moderate load)
+
+These ranges apply to any JVM application (Spring Boot, Quarkus, Micronaut, Dropwizard, plain Java servers, etc.):
 
 | State | Healthy Range | Red Flag Threshold |
 |---|---|---|
@@ -41,8 +43,9 @@ Hot loop or CPU-bound operation. Check if threads are in:
 Thread leak. Common causes:
 - `new Thread().start()` without pooling
 - `Executors.newCachedThreadPool()` under sustained load
-- Unbounded `@Async` with `SimpleAsyncTaskExecutor`
+- Unbounded async executors (Spring `SimpleAsyncTaskExecutor`, or custom unbounded pools)
 - Connections not being returned to pool
+- Vert.x/Netty event loop threads accumulating due to unclosed contexts
 
 ### RUNNABLE at SocketInputStream.read
 Thread is blocked on I/O but JVM reports it as RUNNABLE (JVM doesn't distinguish CPU-runnable from I/O-blocked).

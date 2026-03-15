@@ -43,9 +43,11 @@
 
 Thread dumps are one of the most powerful JVM diagnostic tools — and one of the most underused.
 
-A production Spring Boot app easily has 200+ threads. A raw thread dump is a wall of text: thousands of lines of stack traces, lock addresses, and JDK internals. Most developers can spot an obvious deadlock but miss the subtle patterns — connection pool exhaustion creeping in, a `synchronized` bottleneck serializing requests, `@Transactional` holding a database connection hostage during an HTTP call to a slow external service.
+A production JVM app easily has 200+ threads. A raw thread dump is a wall of text: thousands of lines of stack traces, lock addresses, and JDK internals. Most developers can spot an obvious deadlock but miss the subtle patterns — connection pool exhaustion creeping in, a `synchronized` bottleneck serializing requests, a transaction holding a database connection hostage during an HTTP call to a slow external service.
 
-**thread-necromancer** turns that wall of text into structured, actionable analysis. It captures thread dumps, parses them into meaningful sections, identifies known anti-patterns (especially Spring-specific ones), and produces a prioritized report with concrete fix suggestions — complete with YAML config properties and code examples.
+**thread-necromancer** turns that wall of text into structured, actionable analysis. It captures thread dumps, parses them into meaningful sections, identifies known anti-patterns, and produces a prioritized report with concrete fix suggestions — complete with config properties and code examples.
+
+Works with **any JVM application** — Spring Boot, Quarkus, Micronaut, Vert.x, Dropwizard, or plain Java. Framework-specific patterns (thread naming, proxy detection, scheduler defaults) are detected automatically.
 
 No SaaS. No GUI. Just your terminal and Claude.
 
@@ -69,7 +71,7 @@ Discovers running JVM processes, captures a thread dump via `jcmd` (or `jstack` 
 - **Blocked thread clusters** — groups of threads waiting at the same point
 - **Thread pool health** — sizing, utilization, exhaustion
 - **Lock contention hotspots** — which locks have the most waiters
-- **Spring-specific findings** — `@Scheduled` pool sizing, `@Transactional` anti-patterns, proxy detection
+- **Framework-specific findings** — Spring, Quarkus, Micronaut, Vert.x patterns detected automatically
 - **Top 3 prioritized actions** with concrete config/code fixes
 
 <details>
@@ -237,8 +239,9 @@ Optional settings via flag files in `.thread-necromancer/`:
 | Deadlock | CRITICAL | JVM-reported circular lock dependency |
 | Thread pool exhaustion | CRITICAL | All pool threads busy, no idle capacity |
 | External service timeout | WARNING | Threads RUNNABLE at `SocketInputStream.read()` |
-| @Scheduled pool = 1 | WARNING | Single scheduling thread, tasks queuing |
-| @Transactional + HTTP call | WARNING | DB connection held during external call |
+| Scheduler pool = 1 | WARNING | Single scheduling thread, tasks queuing |
+| Transaction + HTTP call | WARNING | DB connection held during external call |
+| Event loop blocking | WARNING | Blocking I/O on Netty/Vert.x event loop |
 | Thread leak | WARNING | Growing thread count across dumps |
 | @Async pool exhaustion | WARNING | Tiny async pool, tasks rejected |
 | Open-in-view lazy loading | INFO | Hibernate proxies in controller layer |

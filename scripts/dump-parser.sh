@@ -129,24 +129,49 @@ print_thread_pools() {
 
     # Pool patterns in order, pipe-separated: pattern|label
     local pool_defs=(
+        # Tomcat
         "http-nio-.*-exec-|Tomcat NIO Executor"
         "http-nio-.*-Poller|Tomcat NIO Poller"
         "http-nio-.*-Acceptor|Tomcat Acceptor"
+        # Jetty
+        "qtp.*-|Jetty QueuedThreadPool"
+        # Undertow
+        "XNIO-.*-task-|Undertow Worker"
+        "XNIO-.*-I/O-|Undertow I/O"
+        # Spring
         "scheduling-|Spring @Scheduled"
         "task-|Spring @Async"
         "taskScheduler-|Spring TaskScheduler"
-        "HikariPool-.*housekeeper|HikariCP Housekeeper"
-        "HikariPool-.*connection|HikariCP Connection"
-        "lettuce-nioEventLoop-|Redis Lettuce"
+        "AsyncExecutor-|Async Executor"
+        # Quarkus / Vert.x
+        "executor-thread-|Quarkus Worker Pool"
+        "vert.x-eventloop-thread-|Vert.x Event Loop"
+        "vert.x-worker-thread-|Vert.x Worker Pool"
+        "vert.x-internal-blocking-|Vert.x Internal Blocking"
+        "quarkus-scheduler-|Quarkus Scheduler"
+        # Micronaut
+        "default-nioEventLoopGroup-|Micronaut Event Loop"
+        "io-executor-thread-|Micronaut I/O Pool"
+        "scheduled-executor-thread-|Micronaut Scheduler"
+        # Reactive
         "reactor-http-nio-|WebFlux/Netty"
         "parallel-|Reactor Parallel"
         "boundedElastic-|Reactor BoundedElastic"
+        # Database pools
+        "HikariPool-.*housekeeper|HikariCP Housekeeper"
+        "HikariPool-.*connection|HikariCP Connection"
+        "C3P0PooledConnectionPool|C3P0 Connection Pool"
+        # Clients / Messaging
+        "lettuce-nioEventLoop-|Redis Lettuce"
+        "redisson-netty-|Redisson Redis"
+        "kafka-producer-network-|Kafka Producer"
+        "kafka-coordinator-|Kafka Coordinator"
+        "Eureka-|Eureka Discovery"
+        "Hystrix-|Hystrix Circuit Breaker"
+        # JDK
         "ForkJoinPool.commonPool|ForkJoinPool Common"
         "ForkJoinPool-|ForkJoinPool Custom"
         "pool-.*-thread-|Generic Thread Pool"
-        "AsyncExecutor-|Async Executor"
-        "Eureka-|Eureka Discovery"
-        "C3P0PooledConnectionPool|C3P0 Connection Pool"
     )
 
     local matched_file

@@ -44,12 +44,32 @@ For each identified pool:
 - [ ] Are there nested locks? (risk of deadlock)
 - [ ] Is the lock on a singleton bean? (Spring default scope)
 
-## 7. Spring-Specific Analysis
+## 7. Framework-Specific Analysis
+
+First detect the framework from thread names and stack frames, then apply relevant checks:
+
+**Spring Boot:**
 - [ ] Check @Scheduled pool size (default = 1, almost always too small)
 - [ ] Check for @Transactional + external I/O (holding DB connection during HTTP call)
 - [ ] Check for open-in-view lazy loading (Hibernate proxies in controller layer)
 - [ ] Check for Spring proxy overhead in hot paths (CGLIB in tight loops)
 - [ ] Check @Async executor configuration (default SimpleAsyncTaskExecutor = no pooling!)
+
+**Quarkus:**
+- [ ] Check for blocking calls on `executor-thread-*` in reactive routes
+- [ ] Check Vert.x event loop threads for blocking I/O
+- [ ] Check Agroal connection pool sizing
+
+**Micronaut:**
+- [ ] Check for blocking calls on `default-nioEventLoopGroup-*` (event loop)
+- [ ] Check I/O pool sizing (`io-executor-thread-*`)
+
+**Vert.x:**
+- [ ] Check for blocking calls on `vert.x-eventloop-thread-*`
+- [ ] Check worker pool sizing
+
+**Any framework:**
+- [ ] Check for proxy/wrapper frames obscuring real class names — strip them
 
 ## 8. I/O and External Service Analysis
 - [ ] Threads at SocketInputStream.read → External service calls
