@@ -21,5 +21,8 @@ build/
 *-workspace/
 evals/
 
+# Test dumps (regenerate via fixture app or generate-large-dump.sh)
+benchmark/test-dumps/
+
 # OS
 Thumbs.db
