@@ -11,7 +11,7 @@
 <p align="center">
   <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT"></a>
   <a href="LICENSE-APACHE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" alt="Apache 2.0"></a>
-  <img src="https://img.shields.io/badge/JDK-17+-orange.svg" alt="JDK 17+">
+  <img src="https://img.shields.io/badge/JDK-11+-orange.svg" alt="JDK 11+">
   <img src="https://img.shields.io/badge/Claude_Code-plugin-blueviolet.svg" alt="Claude Code Plugin">
 </p>
 
@@ -185,7 +185,7 @@ powershell -File scripts/check-prerequisites.ps1
 ```
 
 **Platform support:**
-- **Thread dump parser** (`DumpParser.java`): cross-platform, runs anywhere with JDK 11+
+- **Thread dump parser** (`run-parser.sh` / `run-parser.ps1`): auto-discovers JDK 11+ from PATH, JAVA_HOME, `~/.jdks`, SDKMAN, Homebrew, and common install locations
 - **Dump collector**: Bash (`dump-collector.sh`) on macOS/Linux, PowerShell (`dump-collector.ps1`) on Windows
 - **Docker:** Works if the JDK is in the container. For JRE-only containers, use `jstack` from the host.
 
