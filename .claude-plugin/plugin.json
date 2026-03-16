@@ -1,21 +1,12 @@
 {
   "name": "thread-necromancer",
   "version": "1.0.0",
-  "description": "JVM Thread Dump Analysis — raising insights from dead threads",
-  "author": "SegfaultSorcerer",
-  "homepage": "https://github.com/SegfaultSorcerer/thread-necromancer",
-  "license": "MIT OR Apache-2.0",
-  "skills": [
-    "skills/thread-dump",
-    "skills/thread-analyze",
-    "skills/thread-watch",
-    "skills/thread-compare"
-  ],
-  "hooks": "hooks/hooks.json",
-  "prerequisites": {
-    "required": ["java"],
-    "optional": ["jcmd", "jstack"]
+  "description": "JVM Thread Dump Analysis — capture, parse, and diagnose thread dumps for deadlocks, contention, pool exhaustion, and framework-specific anti-patterns",
+  "author": {
+    "name": "SegfaultSorcerer",
+    "url": "https://github.com/SegfaultSorcerer"
   },
-  "tags": ["java", "jvm", "debugging", "performance", "spring"],
-  "keywords": ["thread dump", "deadlock", "contention", "jvm diagnostics"]
+  "repository": "https://github.com/SegfaultSorcerer/thread-necromancer",
+  "license": "MIT OR Apache-2.0",
+  "keywords": ["java", "jvm", "thread-dump", "deadlock", "contention", "performance", "spring", "quarkus", "debugging"]
 }
