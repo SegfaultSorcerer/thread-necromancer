@@ -19,7 +19,10 @@ Production thread dumps can be thousands of lines long (5000–20000 lines for a
 
 The parser is at `scripts/DumpParser.java` relative to the plugin root. The plugin root is two levels up from this SKILL.md (this file is at `skills/thread-analyze/SKILL.md`, so scripts are at `../../scripts/`).
 
-The parser is cross-platform (Java): `java <plugin-root>/scripts/DumpParser.java <file>`
+**macOS/Linux:** `bash <plugin-root>/scripts/run-parser.sh <file>`
+**Windows:** `powershell -File <plugin-root>/scripts/run-parser.ps1 <file>`
+
+These wrappers automatically find a suitable JDK (>= 11), searching PATH, JAVA_HOME, ~/.jdks, and common install locations.
 
 ## Procedure
 
@@ -27,8 +30,13 @@ The parser is cross-platform (Java): `java <plugin-root>/scripts/DumpParser.java
 
 Run the dump parser to compress the raw dump into structured sections:
 
+**macOS/Linux:**
 ```bash
-java <plugin-root>/scripts/DumpParser.java <file-path>
+bash <plugin-root>/scripts/run-parser.sh <file-path>
+```
+**Windows:**
+```powershell
+powershell -File <plugin-root>/scripts/run-parser.ps1 <file-path>
 ```
 
 The parser output gives you everything you need for analysis:

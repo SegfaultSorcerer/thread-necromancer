@@ -55,9 +55,16 @@ The script outputs the path to the captured dump file.
 
 ### Step 3: Parse the Dump (CRITICAL — always do this)
 
+**macOS/Linux:**
 ```bash
-java <plugin-root>/scripts/DumpParser.java <dump-file-path>
+bash <plugin-root>/scripts/run-parser.sh <dump-file-path>
 ```
+**Windows:**
+```powershell
+powershell -File <plugin-root>/scripts/run-parser.ps1 <dump-file-path>
+```
+
+These wrappers automatically find a suitable JDK (>= 11), searching PATH, JAVA_HOME, ~/.jdks, and common install locations.
 
 This compresses the raw dump (potentially thousands of lines) into ~200 lines of structured sections:
 - **DUMP METADATA** — timestamp, JVM version, PID, thread count

@@ -1,6 +1,6 @@
 {
   "name": "thread-necromancer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "JVM Thread Dump Analysis — capture, parse, and diagnose thread dumps for deadlocks, contention, pool exhaustion, and framework-specific anti-patterns",
   "author": {
     "name": "SegfaultSorcerer",

@@ -59,8 +59,13 @@ The script outputs the paths to all captured dump files.
 ### Step 4: Parse Each Dump
 
 For each captured dump file:
+**macOS/Linux:**
 ```bash
-java <plugin-root>/scripts/DumpParser.java <dump-file-path>
+bash <plugin-root>/scripts/run-parser.sh <dump-file-path>
+```
+**Windows:**
+```powershell
+powershell -File <plugin-root>/scripts/run-parser.ps1 <dump-file-path>
 ```
 
 ### Step 5: Temporal Analysis

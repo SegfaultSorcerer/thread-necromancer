@@ -18,7 +18,10 @@ You are a JVM thread dump analysis expert. Your task is to compare two thread du
 
 ## Locating Scripts
 
-The parser is at `scripts/DumpParser.java` relative to the plugin root (two levels up from this SKILL.md). Cross-platform: `java <plugin-root>/scripts/DumpParser.java <file>`
+**macOS/Linux:** `bash <plugin-root>/scripts/run-parser.sh <file>`
+**Windows:** `powershell -File <plugin-root>/scripts/run-parser.ps1 <file>`
+
+These wrappers automatically find a suitable JDK (>= 11), searching PATH, JAVA_HOME, ~/.jdks, and common install locations.
 
 ## Procedure
 
@@ -30,9 +33,15 @@ The parser is at `scripts/DumpParser.java` relative to the plugin root (two leve
 
 ### Step 2: Parse Both Dumps
 
+**macOS/Linux:**
 ```bash
-java <plugin-root>/scripts/DumpParser.java <file1>
-java <plugin-root>/scripts/DumpParser.java <file2>
+bash <plugin-root>/scripts/run-parser.sh <file1>
+bash <plugin-root>/scripts/run-parser.sh <file2>
+```
+**Windows:**
+```powershell
+powershell -File <plugin-root>/scripts/run-parser.ps1 <file1>
+powershell -File <plugin-root>/scripts/run-parser.ps1 <file2>
 ```
 
 ### Step 3: Compare
