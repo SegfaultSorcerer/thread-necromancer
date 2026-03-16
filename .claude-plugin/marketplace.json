@@ -11,7 +11,7 @@
       "name": "thread-necromancer",
       "source": "./",
       "description": "Capture, parse, and diagnose JVM thread dumps — deadlocks, contention, pool exhaustion, thread leaks, and framework-specific anti-patterns as Claude Code slash commands",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "author": {
         "name": "SegfaultSorcerer"
       },

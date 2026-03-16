@@ -13,8 +13,20 @@ $Parser = Join-Path $ScriptDir "DumpParser.java"
 function Get-JavaMajorVersion {
     param([string]$JavaBin)
     try {
-        # java -version outputs to stderr; capture everything as strings
-        $output = & $JavaBin -version 2>&1 | Out-String
+        # java -version writes to stderr — use Process API for reliable capture
+        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+        $pinfo.FileName = $JavaBin
+        $pinfo.Arguments = "-version"
+        $pinfo.RedirectStandardError = $true
+        $pinfo.RedirectStandardOutput = $true
+        $pinfo.UseShellExecute = $false
+        $pinfo.CreateNoWindow = $true
+        $proc = [System.Diagnostics.Process]::Start($pinfo)
+        $stderr = $proc.StandardError.ReadToEnd()
+        $stdout = $proc.StandardOutput.ReadToEnd()
+        $proc.WaitForExit()
+        $output = "$stderr $stdout"
+
         # Match version string like "17.0.2" or "1.8.0_202"
         if ($output -match '"(\d+)(\.(\d+))?') {
             $first = [int]$Matches[1]
