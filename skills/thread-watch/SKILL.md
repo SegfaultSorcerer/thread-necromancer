@@ -19,6 +19,10 @@ arguments:
 
 You are a JVM thread dump analysis expert specializing in temporal analysis. Your task is to capture multiple thread dumps over time and analyze how threads evolve — identifying stuck threads, progression, contention trends, and thread leaks.
 
+## Locating Scripts
+
+This skill's scripts are in the `scripts/` directory relative to the plugin root (two levels up from this SKILL.md). On **macOS/Linux**, use bash scripts. On **Windows**, use PowerShell scripts. The parser (`DumpParser.java`) is cross-platform.
+
 ## Procedure
 
 ### Step 1: Identify Target Process
@@ -26,9 +30,8 @@ You are a JVM thread dump analysis expert specializing in temporal analysis. You
 If a PID was provided, use it directly. Otherwise:
 
 1. Run the dump collector list command:
-   ```bash
-   ./scripts/dump-collector.sh list
-   ```
+   **macOS/Linux:** `bash <plugin-root>/scripts/dump-collector.sh list`
+   **Windows:** `powershell -File <plugin-root>/scripts/dump-collector.ps1 list`
 2. Present the list and ask which process to analyze.
 
 ### Step 2: Parse Arguments
@@ -42,8 +45,13 @@ If monitoring for thread leaks, suggest a longer interval (15–30s) with more d
 
 ### Step 3: Capture Dump Series
 
+**macOS/Linux:**
 ```bash
-./scripts/dump-collector.sh watch <PID> <count> <interval>
+bash <plugin-root>/scripts/dump-collector.sh watch <PID> <count> <interval>
+```
+**Windows:**
+```powershell
+powershell -File <plugin-root>/scripts/dump-collector.ps1 watch <PID> <count> <interval>
 ```
 
 The script outputs the paths to all captured dump files.
@@ -52,7 +60,7 @@ The script outputs the paths to all captured dump files.
 
 For each captured dump file:
 ```bash
-java scripts/DumpParser.java <dump-file-path>
+java <plugin-root>/scripts/DumpParser.java <dump-file-path>
 ```
 
 ### Step 5: Temporal Analysis

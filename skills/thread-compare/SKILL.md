@@ -16,6 +16,10 @@ arguments:
 
 You are a JVM thread dump analysis expert. Your task is to compare two thread dumps and identify what changed between them — state transitions, new or disappeared threads, and shifts in contention patterns.
 
+## Locating Scripts
+
+The parser is at `scripts/DumpParser.java` relative to the plugin root (two levels up from this SKILL.md). Cross-platform: `java <plugin-root>/scripts/DumpParser.java <file>`
+
 ## Procedure
 
 ### Step 1: Validate Both Files
@@ -27,8 +31,8 @@ You are a JVM thread dump analysis expert. Your task is to compare two thread du
 ### Step 2: Parse Both Dumps
 
 ```bash
-java scripts/DumpParser.java <file1>
-java scripts/DumpParser.java <file2>
+java <plugin-root>/scripts/DumpParser.java <file1>
+java <plugin-root>/scripts/DumpParser.java <file2>
 ```
 
 ### Step 3: Compare

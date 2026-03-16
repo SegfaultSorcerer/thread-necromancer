@@ -15,14 +15,20 @@ You are a JVM thread dump analysis expert. Your task is to analyze an existing t
 
 Production thread dumps can be thousands of lines long (5000–20000 lines for apps with 500–2000 threads). Reading the raw dump directly wastes tokens and makes it easy to miss patterns buried in noise. The dump parser compresses this into ~200 structured lines, which is what you should analyze.
 
+## Locating Scripts
+
+The parser is at `scripts/DumpParser.java` relative to the plugin root. The plugin root is two levels up from this SKILL.md (this file is at `skills/thread-analyze/SKILL.md`, so scripts are at `../../scripts/`).
+
+The parser is cross-platform (Java): `java <plugin-root>/scripts/DumpParser.java <file>`
+
 ## Procedure
 
 ### Step 1: Parse the Dump (CRITICAL — always do this first)
 
-Run the dump parser to compress the raw dump into structured sections. This is the most important step — it reduces a 10000-line dump to ~200 lines of actionable data:
+Run the dump parser to compress the raw dump into structured sections:
 
 ```bash
-java scripts/DumpParser.java <file-path>
+java <plugin-root>/scripts/DumpParser.java <file-path>
 ```
 
 The parser output gives you everything you need for analysis:
@@ -36,7 +42,7 @@ The parser output gives you everything you need for analysis:
 
 This structured output is the primary input for your analysis. Do NOT read the raw dump file directly unless the parser fails or you need to investigate a specific thread in detail.
 
-**If the parser is not available** (e.g., permission issues, different working directory): Read the raw file, but focus your reading on the deadlock section (search for "Found.*deadlock"), BLOCKED threads, and thread headers — do not try to read every single thread's stack trace.
+**If the parser is not available** (e.g., permission issues, Java not on PATH): Read the raw file, but focus your reading on the deadlock section (search for "Found.*deadlock"), BLOCKED threads, and thread headers — do not try to read every single thread's stack trace.
 
 ### Step 2: Validate
 

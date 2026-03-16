@@ -15,22 +15,40 @@ You are a JVM thread dump analysis expert. Your task is to capture a live thread
 
 Production thread dumps can be thousands of lines long. The dump parser compresses them into ~200 structured lines — always use it.
 
+## Locating Scripts
+
+This skill's scripts are in the `scripts/` directory relative to the plugin root. To find them, look for the `DumpParser.java` and `dump-collector.sh`/`dump-collector.ps1` files near this skill file. The plugin root is typically two levels up from this SKILL.md (e.g., if this file is at `skills/thread-dump/SKILL.md`, the scripts are at `../../scripts/`).
+
+On **macOS/Linux**, use the bash collector: `bash <plugin-root>/scripts/dump-collector.sh`
+On **Windows**, use the PowerShell collector: `powershell -File <plugin-root>/scripts/dump-collector.ps1`
+The **parser** is cross-platform: `java <plugin-root>/scripts/DumpParser.java`
+
 ## Procedure
 
 ### Step 1: Identify Target Process
 
-If a PID was provided, use it directly. Otherwise:
+If a PID was provided, use it directly. Otherwise, list running JVM processes:
 
+**macOS/Linux:**
 ```bash
-./scripts/dump-collector.sh list
+bash <plugin-root>/scripts/dump-collector.sh list
+```
+**Windows:**
+```powershell
+powershell -File <plugin-root>/scripts/dump-collector.ps1 list
 ```
 
 Present the process list and ask which one to analyze. If only one JVM is running, confirm before proceeding.
 
 ### Step 2: Capture Thread Dump
 
+**macOS/Linux:**
 ```bash
-./scripts/dump-collector.sh capture <PID>
+bash <plugin-root>/scripts/dump-collector.sh capture <PID>
+```
+**Windows:**
+```powershell
+powershell -File <plugin-root>/scripts/dump-collector.ps1 capture <PID>
 ```
 
 The script outputs the path to the captured dump file.
@@ -38,7 +56,7 @@ The script outputs the path to the captured dump file.
 ### Step 3: Parse the Dump (CRITICAL — always do this)
 
 ```bash
-java scripts/DumpParser.java <dump-file-path>
+java <plugin-root>/scripts/DumpParser.java <dump-file-path>
 ```
 
 This compresses the raw dump (potentially thousands of lines) into ~200 lines of structured sections:

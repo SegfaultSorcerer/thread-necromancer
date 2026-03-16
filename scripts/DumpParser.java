@@ -1,4 +1,3 @@
-///usr/bin/env java --source 11 "$0" "$@"; exit $?
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
