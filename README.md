@@ -145,17 +145,22 @@ touch .thread-necromancer/startup-baseline.enabled
 
 ## Installation
 
-### Claude Code Plugin Marketplace
+### Plugin (recommended)
 
-```bash
-claude plugin install SegfaultSorcerer/thread-necromancer
+From within Claude Code:
+
+```
+/plugin marketplace add SegfaultSorcerer/thread-necromancer
+/plugin install thread-necromancer@thread-necromancer
 ```
 
 ### Manual
 
 ```bash
 git clone https://github.com/SegfaultSorcerer/thread-necromancer.git
-# Add to your project's .claude/settings.json or install globally
+cp -r thread-necromancer/skills/ your-project/.claude/skills/
+cp -r thread-necromancer/hooks/ your-project/.claude/
+cp thread-necromancer/scripts/* your-project/.claude/scripts/
 ```
 
 ---
