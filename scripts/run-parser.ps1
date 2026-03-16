@@ -13,14 +13,16 @@ $Parser = Join-Path $ScriptDir "DumpParser.java"
 function Get-JavaMajorVersion {
     param([string]$JavaBin)
     try {
-        $output = & $JavaBin -version 2>&1 | Select-Object -First 1
-        if ($output -match '"(\d+)[\.\d]*"') {
-            $major = [int]$Matches[1]
-            # Java 8 reports as 1.8
-            if ($major -eq 1 -and $output -match '"1\.(\d+)') {
-                $major = [int]$Matches[1]
+        # java -version outputs to stderr; capture everything as strings
+        $output = & $JavaBin -version 2>&1 | Out-String
+        # Match version string like "17.0.2" or "1.8.0_202"
+        if ($output -match '"(\d+)(\.(\d+))?') {
+            $first = [int]$Matches[1]
+            # Java 8 and earlier report as 1.x (e.g., "1.8.0_202")
+            if ($first -eq 1 -and $Matches[3]) {
+                return [int]$Matches[3]
             }
-            return $major
+            return $first
         }
     } catch {}
     return 0
@@ -46,48 +48,54 @@ function Find-Java {
 
     # 2. Check JAVA_HOME
     if ($env:JAVA_HOME) {
-        $javaHome = Join-Path $env:JAVA_HOME "bin\java.exe"
-        if (Test-SuitableJava $javaHome) {
-            return $javaHome
+        $jhJava = Join-Path $env:JAVA_HOME "bin\java.exe"
+        if ((Test-Path $jhJava) -and (Test-SuitableJava $jhJava)) {
+            return $jhJava
         }
     }
 
     # 3. Common JDK locations on Windows
-    $searchDirs = @(
+    $searchRoots = @(
         # JetBrains managed JDKs
-        "$env:USERPROFILE\.jdks"
+        (Join-Path $env:USERPROFILE ".jdks")
         # SDKMAN (WSL/Git Bash)
-        "$env:USERPROFILE\.sdkman\candidates\java"
+        (Join-Path $env:USERPROFILE ".sdkman\candidates\java")
         # Scoop
-        "$env:USERPROFILE\scoop\apps\openjdk"
-        "$env:USERPROFILE\scoop\apps\temurin-lts-jdk"
-        # Chocolatey
+        (Join-Path $env:USERPROFILE "scoop\apps\openjdk")
+        (Join-Path $env:USERPROFILE "scoop\apps\temurin-lts-jdk")
+        (Join-Path $env:USERPROFILE "scoop\apps\temurin17-jdk")
+        (Join-Path $env:USERPROFILE "scoop\apps\temurin21-jdk")
+        # Chocolatey / Adoptium / standard
         "C:\Program Files\Eclipse Adoptium"
         "C:\Program Files\Temurin"
         "C:\Program Files\Java"
         "C:\Program Files\AdoptOpenJDK"
+        "C:\Program Files\BellSoft"
         "C:\Program Files\Zulu"
+        "C:\Program Files\Amazon Corretto"
         "C:\Program Files\Microsoft\jdk"
+        "C:\Program Files\SapMachine"
         "C:\Program Files (x86)\Java"
         # Common manual installs
         "C:\Java"
         "C:\jdk"
     )
 
-    foreach ($dir in $searchDirs) {
-        if (-not (Test-Path $dir)) { continue }
+    foreach ($root in $searchRoots) {
+        if (-not (Test-Path $root)) { continue }
 
-        # Search for java.exe in subdirectories
-        $javaBins = Get-ChildItem -Path $dir -Filter "java.exe" -Recurse -Depth 4 -ErrorAction SilentlyContinue |
-            Where-Object { $_.FullName -match '\\bin\\java\.exe$' } |
-            Sort-Object FullName -Descending |
-            Select-Object -First 10
+        # Search for java.exe in bin subdirectories
+        try {
+            $javaBins = Get-ChildItem -Path $root -Filter "java.exe" -Recurse -Depth 4 -ErrorAction SilentlyContinue |
+                Where-Object { $_.FullName -like '*\bin\java.exe' } |
+                Sort-Object { $_.FullName } -Descending
 
-        foreach ($bin in $javaBins) {
-            if (Test-SuitableJava $bin.FullName) {
-                return $bin.FullName
+            foreach ($bin in $javaBins) {
+                if (Test-SuitableJava $bin.FullName) {
+                    return $bin.FullName
+                }
             }
-        }
+        } catch {}
     }
 
     return $null
@@ -99,8 +107,9 @@ $javaBin = Find-Java
 
 if ($javaBin) {
     $version = Get-JavaMajorVersion $javaBin
-    Write-Host "Using Java $version`: $javaBin" -ForegroundColor Green
+    Write-Host "Using Java ${version}: $javaBin" -ForegroundColor Green
     & $javaBin $Parser $DumpFile
+    exit $LASTEXITCODE
 } else {
     Write-Host "ERROR: No suitable JDK (>= 11) found." -ForegroundColor Red
     Write-Host ""
@@ -108,8 +117,11 @@ if ($javaBin) {
     Write-Host ""
     Write-Host "Searched:"
     Write-Host "  - java on PATH"
-    Write-Host "  - JAVA_HOME ($env:JAVA_HOME)"
-    Write-Host "  - ~/.jdks, Program Files\Java, Program Files\Eclipse Adoptium"
+    if ($env:JAVA_HOME) {
+        Write-Host "  - JAVA_HOME ($env:JAVA_HOME)"
+    }
+    Write-Host "  - $env:USERPROFILE\.jdks"
+    Write-Host "  - Program Files\Java, Eclipse Adoptium, Temurin, Zulu, Corretto"
     Write-Host "  - Scoop, Chocolatey install directories"
     Write-Host ""
     Write-Host "Please either:"
